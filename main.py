@@ -54,36 +54,42 @@ def get_viral_content():
     
     # Make prompt dynamic with random themes/topics for variety
     themes = [
-        "conquering fear and taking action",
-        "success requires sacrifice",
-        "being unstoppable in pursuit of goals",
-        "becoming the best version of yourself",
-        "discipline over motivation",
-        "warrior mindset and mental toughness",
-        "breaking free from average thinking",
-        "rising after failure",
-        "dominating your competition",
-        "building an empire from nothing"
+    "discipline over emotion",
+    "faith as structure, not comfort",
+    "masculinity without arrogance",
+    "silence, patience, restraint",
+    "obedience before results",
+    "losing ego to gain direction",
+    "becoming dangerous to laziness, not people"
     ]
-    
+
     selected_theme = random.choice(themes)
     timestamp = int(time.time())  # Add timestamp for uniqueness
     
     prompt = (
-        f"You are a high-testosterone motivational speaker creating UNIQUE viral content. "
-        f"Theme for THIS video: {selected_theme}. "
-        f"Session: {timestamp}. "
-        f"Generate a FRESH 15-second viral script in Hindi (Devanagari). "
-        f"Requirements: "
-        f"1. THE HOOK (First 2-3 sec): Shocking, controversial, or powerful truth that grabs attention "
-        f"2. THE BODY (10-12 sec): Deep stoic/warrior wisdom with actionable insight "
-        f"3. Must be COMPLETELY DIFFERENT from previous quotes - no repetition! "
-        f"4. OUTPUT STRICT JSON with keys: 'hindi_quote', 'english_translation', 'caption', 'hashtags' "
-        f"5. Caption: Short (15-20 words), SEO-optimized, engaging "
-        f"6. Hashtags: 12-15 high-traffic Hindi/English tags (mix trending + niche) "
-        f"7. NO MARKDOWN. RAW JSON ONLY. "
-        f"Make it VIRAL-WORTHY and UNIQUE!"
-    )
+    f"Role: You are an anonymous disciplined spiritual guide for men who feel lost. "
+    f"Your voice is calm, grounded, and authoritative — never loud, never motivational. "
+    f"You speak like someone who has suffered, learned, and simplified life. "
+    f"Theme for this video: {selected_theme}. "
+    f"Session ID: {timestamp}. "
+
+    f"Task: Generate a UNIQUE 15-second script in Hindi (Devanagari). "
+
+    f"Structure: "
+    f"1. HOOK (0–3 sec): A blunt truth that stops lost men from scrolling. No hype. "
+    f"2. BODY (3–13 sec): One clear principle linking discipline, faith, and masculinity. "
+    f"   Speak as guidance, not preaching. Short sentences. No clichés. "
+    f"3. CLOSE (last 2 sec): A direct command that builds habit and continuity: "
+    f"   'Roz aisi yaad ke liye follow karo.' "
+
+    f"Rules: "
+    f"- Do NOT mention motivation, hustle, trends, or social media. "
+    f"- Do NOT repeat phrases from previous scripts. "
+    f"- Make it sound lived-in, not generated. "
+
+    f"Output format: STRICT JSON ONLY with keys: "
+    f"'hindi_quote', 'english_translation', 'caption', 'hashtags'. "
+)
 
     try:
         response = client.models.generate_content(
