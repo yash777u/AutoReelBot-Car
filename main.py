@@ -73,7 +73,10 @@ def get_viral_content():
     f"Theme for this video: {selected_theme}. "
     f"Session ID: {timestamp}. "
 
-    f"Task: Generate a UNIQUE 15-second script in Hindi (Devanagari). "
+    f"Task: Generate a UNIQUE Hindi (Devanagari) script for a 15-second video. "
+    f"STRICT LENGTH RULES (MANDATORY): "
+    f"- TOTAL WORD COUNT: 32 to 36 words ONLY. "
+    f"- Short sentences. Max 7–8 words per sentence. "
 
     f"Structure: "
     f"1. HOOK (0–3 sec): A blunt truth that stops lost men from scrolling. No hype. "
@@ -83,8 +86,10 @@ def get_viral_content():
     f"   'Roz aisi yaad ke liye follow karo.' "
 
     f"Rules: "
+    f"- Do NOT exceed 36 words total. "
+    f"- Do NOT include emojis. "
     f"- Do NOT mention motivation, hustle, trends, or social media. "
-    f"- Do NOT repeat phrases from previous scripts. "
+    f"- Do NOT repeat phrases from earlier scripts. "
     f"- Make it sound lived-in, not generated. "
 
     f"Output format: STRICT JSON ONLY with keys: "
