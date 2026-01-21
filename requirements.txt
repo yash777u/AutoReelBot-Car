@@ -9,3 +9,4 @@ imageio-ffmpeg         # Required for video rendering
 pydub  
 numpy
 edge-tts
+ffmpeg
