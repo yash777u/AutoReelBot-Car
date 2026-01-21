@@ -30,29 +30,82 @@ def ensure_folders():
 
 
 def generate_simple_thumbnail(video_path):
-    """Generate a simple thumbnail from the first frame using moviepy."""
-    from moviepy.editor import VideoFileClip
+    """Generate a simple thumbnail using ffmpeg (fast and reliable)."""
+    import subprocess
 
     try:
         print("📸 Generating thumbnail...")
+        thumbnail_path = os.path.join(OUTPUT_DIR, "thumbnail.jpg")
+
+        # Use ffmpeg to extract middle frame (fast and doesn't lock file)
+        cmd = [
+            "ffmpeg",
+            "-i",
+            video_path,
+            "-ss",
+            "00:00:01",  # Extract frame at 1 second
+            "-vframes",
+            "1",  # Only 1 frame
+            "-vf",
+            "scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2",
+            "-q:v",
+            "2",  # High quality
+            "-y",  # Overwrite
+            thumbnail_path,
+        ]
+
+        # Run ffmpeg silently
+        result = subprocess.run(
+            cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=10
+        )
+
+        if result.returncode == 0 and os.path.exists(thumbnail_path):
+            print(f"✅ Thumbnail saved: {thumbnail_path}")
+            return thumbnail_path
+        else:
+            print("⚠️ ffmpeg failed, trying fallback method...")
+            return generate_thumbnail_fallback(video_path)
+
+    except FileNotFoundError:
+        print("⚠️ ffmpeg not found, using fallback method...")
+        return generate_thumbnail_fallback(video_path)
+    except Exception as e:
+        print(f"⚠️ Thumbnail generation failed: {e}")
+        return generate_thumbnail_fallback(video_path)
+
+
+def generate_thumbnail_fallback(video_path):
+    """Fallback: Use moviepy but with proper cleanup."""
+    try:
+        from moviepy.editor import VideoFileClip
+        import gc
+
+        print("📸 Using fallback thumbnail generator...")
+        thumbnail_path = os.path.join(OUTPUT_DIR, "thumbnail.jpg")
+
+        # Open video
         video = VideoFileClip(video_path)
 
-        # Extract frame from middle of video
-        mid_time = video.duration / 2
-        frame = video.get_frame(mid_time)
+        # Get frame at 1 second (or middle if video is shorter)
+        frame_time = min(1.0, video.duration / 2)
+        frame = video.get_frame(frame_time)
 
-        # Save as JPEG
-        thumbnail_path = os.path.join(OUTPUT_DIR, "thumbnail.jpg")
+        # Close video IMMEDIATELY to release file
+        video.close()
+        del video
+        gc.collect()
+
+        # Save thumbnail
         img = Image.fromarray(frame)
         img = img.resize((1080, 1920), Image.LANCZOS)
         img.save(thumbnail_path, "JPEG", quality=95)
 
-        video.close()
-        print(f"✅ Thumbnail saved: {thumbnail_path}")
+        print(f"✅ Thumbnail saved (fallback): {thumbnail_path}")
         return thumbnail_path
 
     except Exception as e:
-        print(f"⚠️ Thumbnail generation failed: {e}")
+        print(f"⚠️ Fallback thumbnail failed: {e}")
+        print("💡 Uploading without custom thumbnail (Instagram will generate one)")
         return None
 
 

@@ -2,21 +2,22 @@ import os
 from dotenv import load_dotenv
 from instagrapi import Client
 from instagrapi.exceptions import (
-    LoginRequired, 
-    ChallengeRequired, 
-    TwoFactorRequired, 
-    BadPassword
+    LoginRequired,
+    ChallengeRequired,
+    TwoFactorRequired,
+    BadPassword,
 )
 
 load_dotenv()
 USERNAME = os.getenv("INSTA_USERNAME")
 PASSWORD = os.getenv("INSTA_PASSWORD")
-MANUAL_SESSION_ID = os.getenv("INSTA_SESSIONID") # Add this to your .env
+MANUAL_SESSION_ID = os.getenv("INSTA_SESSIONID")  # Add this to your .env
+
 
 def login_user():
     cl = Client()
     session_file = "session.json"
-    
+
     # 1. Try Loading Session File
     if os.path.exists(session_file):
         try:
@@ -72,6 +73,7 @@ def login_user():
         print("   2. Check if password is correct")
         print("   3. Instagram might be blocking automation - wait 1 hour")
         return None
+
 
 if __name__ == "__main__":
     login_user()
