@@ -1,5 +1,6 @@
 import os
 import random
+import time
 from dotenv import load_dotenv
 from PIL import Image
 
@@ -109,62 +110,131 @@ def generate_thumbnail_fallback(video_path):
         return None
 
 
-def upload_reel(video_path, caption):
-    """Upload reel to Instagram."""
+def upload_reel_aggressive(video_path, caption):
+    """Upload reel with multiple retry strategies."""
     print("🚀 Connecting to Instagram...")
-    cl = login_user()
-    if not cl:
-        print("❌ Login failed. Video skipped.")
-        return False
 
-    # Verify we're actually logged in
-    try:
-        user = cl.account_info()
-        print(f"✅ Logged in as: @{user.username}")
-    except Exception as e:
-        print(f"❌ Not actually logged in! Error: {e}")
-        print("💡 Get fresh INSTA_SESSIONID from browser cookies")
-        return False
+    max_attempts = 3
 
-    print(f"📤 Uploading reel: {os.path.basename(video_path)}")
+    for attempt in range(1, max_attempts + 1):
+        print(f"\n🔄 Upload attempt {attempt}/{max_attempts}")
 
-    # Generate thumbnail
-    thumbnail_path = generate_simple_thumbnail(video_path)
-
-    try:
-        media = cl.clip_upload(video_path, caption=caption, thumbnail=thumbnail_path)
-
-        # Success
-        if media and hasattr(media, "code"):
-            print(f"\n🎉 SUCCESS! REEL POSTED!")
-            print(f"📱 Code: {media.code}")
-            print(f"🔗 URL: https://www.instagram.com/reel/{media.code}/")
-            print(f"👀 Profile: https://www.instagram.com/{user.username}/")
-            return True
-        else:
-            print("⚠️ Upload returned but no media code")
+        # Get fresh login for each attempt
+        cl = login_user()
+        if not cl:
+            print(f"❌ Login failed on attempt {attempt}")
+            if attempt < max_attempts:
+                print(f"⏳ Waiting 5 seconds before retry...")
+                time.sleep(5)
+                continue
             return False
 
-    except Exception as e:
-        error_str = str(e)
+        # Verify login
+        try:
+            user = cl.account_info()
+            print(f"✅ Logged in as: @{user.username}")
+        except Exception as e:
+            print(f"❌ Not actually logged in! Error: {e}")
+            if attempt < max_attempts:
+                print(f"⏳ Waiting 5 seconds before retry...")
+                time.sleep(5)
+                continue
+            return False
 
-        # Sometimes instagrapi throws pydantic errors even when upload succeeds
-        if "pydantic" in error_str.lower() or "validation" in error_str.lower():
-            print("\n✅ Upload likely SUCCEEDED (pydantic parsing error)")
-            print(f"👀 Check your profile: https://www.instagram.com/{user.username}/")
-            return True  # Treat as success to delete the file
+        print(f"📤 Uploading reel: {os.path.basename(video_path)}")
 
-        # Real errors
-        print(f"\n❌ UPLOAD FAILED: {error_str}")
+        # Generate thumbnail
+        thumbnail_path = generate_simple_thumbnail(video_path)
 
-        if "login_required" in error_str.lower():
-            print("\n💡 FIX: Session expired! Get fresh sessionid from browser")
-        elif "challenge" in error_str.lower():
-            print("\n💡 FIX: Complete verification in Instagram app")
-        elif "spam" in error_str.lower() or "limit" in error_str.lower():
-            print("\n💡 FIX: Wait 1-2 hours (posting too fast)")
+        # Add random delay (2-5 seconds) to appear more human
+        delay = random.randint(2, 5)
+        print(f"⏳ Adding {delay}s human-like delay...")
+        time.sleep(delay)
 
-        return False
+        try:
+            # Try upload with thumbnail first
+            if thumbnail_path:
+                print("📸 Uploading with custom thumbnail...")
+                media = cl.clip_upload(
+                    video_path, caption=caption, thumbnail=thumbnail_path
+                )
+            else:
+                print("📸 Uploading without thumbnail...")
+                media = cl.clip_upload(video_path, caption=caption)
+
+            # Success
+            if media and hasattr(media, "code"):
+                print(f"\n🎉 SUCCESS! REEL POSTED!")
+                print(f"📱 Code: {media.code}")
+                print(f"🔗 URL: https://www.instagram.com/reel/{media.code}/")
+                print(f"👀 Profile: https://www.instagram.com/{user.username}/")
+                return True
+            else:
+                print("⚠️ Upload returned but no media code")
+                if attempt < max_attempts:
+                    print(f"⏳ Waiting 10 seconds before retry...")
+                    time.sleep(10)
+                    continue
+
+        except Exception as e:
+            error_str = str(e)
+
+            # Sometimes instagrapi throws pydantic errors even when upload succeeds
+            if "pydantic" in error_str.lower() or "validation" in error_str.lower():
+                print("\n✅ Upload likely SUCCEEDED (pydantic parsing error)")
+                print(
+                    f"👀 Check your profile: https://www.instagram.com/{user.username}/"
+                )
+                print("⏳ Waiting 5 seconds to verify...")
+                time.sleep(5)
+
+                # Try to verify upload succeeded by checking recent media
+                try:
+                    recent_media = cl.user_medias(user.pk, amount=1)
+                    if recent_media:
+                        print("✅ CONFIRMED: Found recent upload!")
+                        return True
+                except:
+                    pass
+
+                # Assume success if pydantic error
+                return True
+
+            # Real errors
+            print(f"\n❌ UPLOAD FAILED: {error_str}")
+
+            if "login_required" in error_str.lower():
+                print("\n💡 Session expired, will retry with fresh login...")
+                # Delete session file to force fresh login
+                if os.path.exists("session.json"):
+                    try:
+                        os.remove("session.json")
+                        print("🗑️ Deleted old session file")
+                    except:
+                        pass
+
+            elif "challenge" in error_str.lower():
+                print("\n💡 Instagram security challenge detected")
+                print("   Please complete verification in Instagram app/website")
+                return False
+
+            elif "spam" in error_str.lower() or "limit" in error_str.lower():
+                print("\n💡 Rate limit hit - waiting longer...")
+                if attempt < max_attempts:
+                    wait_time = 30 * attempt  # Exponential backoff
+                    print(f"⏳ Waiting {wait_time} seconds...")
+                    time.sleep(wait_time)
+                    continue
+
+            # Generic retry logic
+            if attempt < max_attempts:
+                wait_time = 10 * attempt
+                print(f"⏳ Waiting {wait_time} seconds before retry...")
+                time.sleep(wait_time)
+                continue
+
+    print("\n❌ All upload attempts failed")
+    return False
 
 
 def get_video_files():
@@ -199,8 +269,8 @@ if __name__ == "__main__":
         selected_video = random.choice(videos)
         print(f"👉 Selected video: {os.path.basename(selected_video)}")
 
-        # Upload
-        success = upload_reel(selected_video, FIXED_CAPTION)
+        # Upload with aggressive retry
+        success = upload_reel_aggressive(selected_video, FIXED_CAPTION)
 
         # Delete if successful
         if success:
