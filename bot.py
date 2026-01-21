@@ -12,20 +12,46 @@ VIDEO_EXTENSIONS = (".mp4", ".mov", ".avi", ".mkv")
 
 SESSION_FILE = "session.json"
 
+# 🔥 Hashtag sets (curated car pools)
+HASHTAG_SETS = [
+    ["#bmw", "#bmwm", "#bmwmotorrad", "#bmwrepost", "#bmwmrepost"],
+    [
+        "#porsche",
+        "#992gt3rs",
+        "#porsche911",
+        "#gt3rs",
+        "#hawaii",
+        "#beach",
+        "#carsofinstagram",
+        "#carphotos",
+    ],
+    ["#porsche", "#carsofinstagram", "#gt3rs", "#992gt3rs", "#porsche911"],
+    ["#bmw", "#bmwm3", "#bmws1000rr", "#bmwnation"],
+    ["#bmw", "#bmws1000rr", "#bmwm", "#bmwperformance"],
+    ["#bmw", "#bmws1000rr", "#bmwnation", "#bmwm3"],
+    ["#bmw", "#bmwm3", "#f80m3", "#snow", "#carsofinstagram"],
+]
+
 
 def get_current_directory():
     return os.getcwd()
 
 
+def get_random_hashtags():
+    """Pick 3 random hashtag sets and combine them"""
+    selected_sets = random.sample(HASHTAG_SETS, k=3)
+    hashtags = [tag for group in selected_sets for tag in group]
+    return " ".join(hashtags)
+
+
 def login(username, password):
     cl = Client()
 
-    # Try to reuse existing session
     if os.path.exists(SESSION_FILE):
         try:
             cl.load_settings(SESSION_FILE)
             cl.login(username, password)
-            cl.get_timeline_feed()  # session validation
+            cl.get_timeline_feed()
             print("✅ Session loaded and valid")
             return cl
         except Exception:
@@ -58,7 +84,6 @@ def upload_one_random_video_and_exit(client):
         print("📭 No videos available to upload")
         return
 
-    # Cool-off delay AFTER login
     pre_delay = random.randint(20, 40)
     print(f"⏳ Pre-upload cool-off: waiting {pre_delay}s")
     time.sleep(pre_delay)
@@ -66,11 +91,10 @@ def upload_one_random_video_and_exit(client):
     video = random.choice(video_files)
     video_path = os.path.join(videos_folder, video)
 
+    caption = f"Tags 🏷:\n{get_random_hashtags()}"
+
     try:
-        client.video_upload(
-            video_path,
-            caption="Tags 🏷: #animeedit #animevibes #anime",
-        )
+        client.video_upload(video_path, caption=caption)
         print(f"🎬 Uploaded video: {video}")
 
         post_delay = random.randint(30, 40)
